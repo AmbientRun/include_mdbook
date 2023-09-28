@@ -497,7 +497,12 @@ impl<'a, I: Iterator<Item = Event<'a>>> RsxMarkdownParser<'a, I> {
             Tag::Image(_, dest, title) => {
                 let name = Ident::new("img", Span::call_site());
                 let alt = self.take_text();
-                let dest = format!("{}{}", self.assets_base, dest);
+                let dest = format!(
+                    "{}{}{}",
+                    self.assets_base,
+                    self.path.as_os_str().to_string_lossy(),
+                    dest
+                );
                 self.start_node(BodyNode::Element(Element {
                     name: dioxus_rsx::ElementName::Ident(name.clone()),
                     key: None,
