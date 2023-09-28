@@ -498,9 +498,9 @@ impl<'a, I: Iterator<Item = Event<'a>>> RsxMarkdownParser<'a, I> {
                 let name = Ident::new("img", Span::call_site());
                 let alt = self.take_text();
                 let dest = format!(
-                    "{}{}{}",
+                    "{}{}/{}",
                     self.assets_base,
-                    self.path.as_os_str().to_string_lossy(),
+                    self.path.parent().unwrap().as_os_str().to_string_lossy(),
                     dest
                 );
                 self.start_node(BodyNode::Element(Element {

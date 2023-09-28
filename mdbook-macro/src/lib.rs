@@ -12,17 +12,15 @@ use quote::ToTokens;
 use syn::LitStr;
 
 use crate::transform_book::write_book_with_routes;
+use mdbook_shared::get_book_content_path;
 
 mod rsx;
 mod transform_book;
 
 #[proc_macro]
 pub fn mdbook_router(input: TokenStream) -> TokenStream {
-    // asset_base decides where images etc. area read from.
-    // TODO: Read this from input instead.
-    let asset_base = "/book_assets/".to_string();
     match syn::parse::<LitStr>(input).map(load_book_from_fs) {
-        Ok(Ok((path, book))) => generate_router(path, asset_base, book).into(),
+        Ok(Ok((path, book))) => generate_router(path, book).into(),
         Ok(Err(err)) => write_book_err(err),
         Err(err) => err.to_compile_error().into(),
     }
@@ -84,12 +82,17 @@ fn load_book_from_fs(input: LitStr) -> anyhow::Result<(PathBuf, mdbook_shared::M
 //     }
 // }
 
-fn generate_router(
-    book_path: PathBuf,
-    assets_base: String,
-    book: mdbook_shared::MdBook<PathBuf>,
-) -> TokenStream2 {
-    let mdbook = write_book_with_routes(book_path, &book);
+fn generate_router(book_path: PathBuf, book: mdbook_shared::MdBook<PathBuf>) -> TokenStream2 {
+    let mdbook = write_book_with_routes(book_path.clone(), &book);
+    let content_path = get_book_content_path(&book_path).unwrap();
+    let relative_content_path = content_path.strip_prefix(&book_path).unwrap();
+
+    // asset_base decides where images etc. area read from.
+    // TODO: Read this from input instead.
+    let assets_base = format!(
+        "/book_assets/{}",
+        relative_content_path.as_os_str().to_string_lossy()
+    );
 
     let book_pages = book.pages().iter().map(|(_, page)| {
         let name = path_to_route_variant(&page.url);
