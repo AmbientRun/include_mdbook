@@ -90,7 +90,7 @@ fn generate_router(book_path: PathBuf, book: mdbook_shared::MdBook<PathBuf>) -> 
     // asset_base decides where images etc. area read from.
     // TODO: Read this from input instead.
     let assets_base = format!(
-        "/book_assets/{}",
+        "/book_assets/{}/",
         relative_content_path.as_os_str().to_string_lossy()
     );
 
