@@ -18,8 +18,11 @@ mod transform_book;
 
 #[proc_macro]
 pub fn mdbook_router(input: TokenStream) -> TokenStream {
+    // asset_base decides where images etc. area read from.
+    // TODO: Read this from input instead.
+    let asset_base = "book/".to_string();
     match syn::parse::<LitStr>(input).map(load_book_from_fs) {
-        Ok(Ok((path, book))) => generate_router(path, book).into(),
+        Ok(Ok((path, book))) => generate_router(path, asset_base, book).into(),
         Ok(Err(err)) => write_book_err(err),
         Err(err) => err.to_compile_error().into(),
     }
@@ -81,14 +84,18 @@ fn load_book_from_fs(input: LitStr) -> anyhow::Result<(PathBuf, mdbook_shared::M
 //     }
 // }
 
-fn generate_router(book_path: PathBuf, book: mdbook_shared::MdBook<PathBuf>) -> TokenStream2 {
+fn generate_router(
+    book_path: PathBuf,
+    assets_base: String,
+    book: mdbook_shared::MdBook<PathBuf>,
+) -> TokenStream2 {
     let mdbook = write_book_with_routes(book_path, &book);
 
     let book_pages = book.pages().iter().map(|(_, page)| {
         let name = path_to_route_variant(&page.url);
         // Rsx doesn't work very well in macros because the path for all the routes generated point to the same characters. We manulally expand rsx here to get around that issue.
         let template_name = format!("{}:0:0:0", page.url.to_string_lossy());
-        match rsx::parse(page.url.clone(), &page.raw) {
+        match rsx::parse(page.url.clone(), &assets_base, &page.raw) {
             Ok(mut rsx) => {
                 rsx.roots
                     .push(dioxus_rsx::BodyNode::Element(dioxus_rsx::Element {

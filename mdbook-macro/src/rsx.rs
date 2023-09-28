@@ -11,7 +11,7 @@ use syn::{Ident, __private::Span, parse_str, LitStr};
 use syntect::highlighting::ThemeSet;
 use syntect::parsing::SyntaxSet;
 
-pub fn parse(path: PathBuf, markdown: &str) -> syn::Result<CallBody> {
+pub fn parse(path: PathBuf, assets_base: &str, markdown: &str) -> syn::Result<CallBody> {
     let mut options = Options::empty();
     options.insert(Options::ENABLE_STRIKETHROUGH);
     options.insert(Options::ENABLE_TABLES);
@@ -24,6 +24,7 @@ pub fn parse(path: PathBuf, markdown: &str) -> syn::Result<CallBody> {
         in_table_header: false,
         iter: parser.by_ref().peekable(),
         path,
+        assets_base: assets_base.to_string(),
         phantom: std::marker::PhantomData,
     };
     rsx_parser.parse()?;
@@ -52,6 +53,8 @@ struct RsxMarkdownParser<'a, I: Iterator<Item = Event<'a>>> {
     iter: Peekable<I>,
 
     path: PathBuf,
+
+    assets_base: String,
 
     phantom: std::marker::PhantomData<&'a ()>,
 }
@@ -494,6 +497,7 @@ impl<'a, I: Iterator<Item = Event<'a>>> RsxMarkdownParser<'a, I> {
             Tag::Image(_, dest, title) => {
                 let name = Ident::new("img", Span::call_site());
                 let alt = self.take_text();
+                let dest = format!("{}{}", self.assets_base, dest);
                 self.start_node(BodyNode::Element(Element {
                     name: dioxus_rsx::ElementName::Ident(name.clone()),
                     key: None,
