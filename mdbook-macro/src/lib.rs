@@ -20,7 +20,7 @@ mod transform_book;
 pub fn mdbook_router(input: TokenStream) -> TokenStream {
     // asset_base decides where images etc. area read from.
     // TODO: Read this from input instead.
-    let asset_base = "book/".to_string();
+    let asset_base = "/book_assets/".to_string();
     match syn::parse::<LitStr>(input).map(load_book_from_fs) {
         Ok(Ok((path, book))) => generate_router(path, asset_base, book).into(),
         Ok(Err(err)) => write_book_err(err),
